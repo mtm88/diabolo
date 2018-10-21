@@ -6,10 +6,12 @@ using UnityStandardAssets.Characters.ThirdPerson;
 public class PlayerMovement : MonoBehaviour
 {
     [SerializeField] float walkMoveStopRadius = 0.2f;
+    [SerializeField] float attackMoveStopRadius = 1f;
 
     ThirdPersonCharacter thirdPersonCharacter;   // A reference to the ThirdPersonCharacter on the object
     CameraRaycaster cameraRaycaster;
-    Vector3 currentClickTarget;
+    Vector3 currentDestination;
+    Vector3 clickPoint;
 
     bool isInDirectMode = false;
         
@@ -17,7 +19,7 @@ public class PlayerMovement : MonoBehaviour
     {
         cameraRaycaster = Camera.main.GetComponent<CameraRaycaster>();
         thirdPersonCharacter = GetComponent<ThirdPersonCharacter>();
-        currentClickTarget = transform.position;
+        currentDestination = transform.position;
     }
 
     // Fixed update is called in sync with physics
@@ -26,7 +28,7 @@ public class PlayerMovement : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.G)) // G for gamepad. TODO allow player to map later
         {
             isInDirectMode = !isInDirectMode; // toggle mode
-            currentClickTarget = transform.position; // clear the click target
+            currentDestination = transform.position; // clear the click target
         }
 
         if (isInDirectMode)
@@ -54,15 +56,15 @@ public class PlayerMovement : MonoBehaviour
     {
         if (Input.GetMouseButton(0))
         {
-            //print("Cursor raycast hit " + cameraRaycaster.currentLayerHit);
+            clickPoint = cameraRaycaster.hit.point;
 
             switch (cameraRaycaster.currentLayerHit)
             {
                 case Layer.Walkable:
-                    currentClickTarget = cameraRaycaster.hit.point;
+                    currentDestination = ShortDestination(clickPoint, walkMoveStopRadius);
                     break;
                 case Layer.Enemy:
-                    print("not moving to enemy");
+                    currentDestination = ShortDestination(clickPoint, attackMoveStopRadius);
                     break;
                 default:
                     print("WHAT? default case in Mouse Move Switch!!");
@@ -70,9 +72,14 @@ public class PlayerMovement : MonoBehaviour
             }
         }
 
-        var playerToClickPoint = currentClickTarget - transform.position;
+        WalktoDestination();
+    }
 
-        if (playerToClickPoint.magnitude >= walkMoveStopRadius)
+    private void WalktoDestination()
+    {
+        var playerToClickPoint = currentDestination - transform.position;
+
+        if (playerToClickPoint.magnitude >= 0)
         {
             thirdPersonCharacter.Move(playerToClickPoint, false, false);
         }
@@ -80,6 +87,27 @@ public class PlayerMovement : MonoBehaviour
         {
             thirdPersonCharacter.Move(Vector3.zero, false, false);
         }
+    }
+
+    Vector3 ShortDestination(Vector3 destination, float shortening)
+    {
+        Vector3 reductionVector = (destination - transform.position).normalized * shortening;
+        return destination - reductionVector;
+    }
+
+    public void OnDrawGizmos()
+    {
+        // draw movement gizmos
+        Gizmos.color = Color.green;
+        Gizmos.DrawLine(transform.position, currentDestination);
+        Gizmos.DrawSphere(currentDestination, 0.1f);
+        Gizmos.color = Color.red;
+        Gizmos.DrawLine(currentDestination, clickPoint);
+        Gizmos.DrawSphere(clickPoint, 0.15f);
+
+        // draw attack range sphere
+        //Gizmos.color = new Color(255f, 0f, 0, 0.5f);
+        //Gizmos.DrawSphere(transform.position, attackMoveStopRadius);
     }
 }
 

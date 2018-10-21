@@ -14,14 +14,14 @@ public class CursorAffordance : MonoBehaviour {
 	// Use this for initialization
 	void Start () {
 		cameraRaycaster = GetComponent<CameraRaycaster>();
-        cameraRaycaster.layerChangeObservers += OnLayerChanged;
+        cameraRaycaster.onLayerChange += OnLayerChanged;
 	}
 
 	// Update is called once per frame
-	void OnLayerChanged() {
+	void OnLayerChanged(Layer newLayer) {
         Texture2D cursorToApply = null;
 
-        switch (cameraRaycaster.currentLayerHit)
+        switch (newLayer)
         {
             case Layer.Walkable:
                 cursorToApply = walkCursor;
@@ -38,4 +38,6 @@ public class CursorAffordance : MonoBehaviour {
         }
         Cursor.SetCursor(cursorToApply, cursorHotspot, CursorMode.Auto);
 	}
+
+    // TODO consider de-registering OnLayerChanged on leaving all game scenes
 }
